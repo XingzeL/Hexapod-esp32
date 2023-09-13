@@ -1,0 +1,60 @@
+#include <Arduino.h>
+#include <BluetoothSerial.h>
+#include "normal_mode.h"
+#include "debug.h"
+#include "hexapod.h"
+
+BluetoothSerial SerialBT;
+#define LED_PIN 2
+static int command;
+
+void setup()
+{
+    Serial.begin(115200);
+    SerialBT.begin("ESP32_hexapod"); // 如果没有参数传入则默认是蓝牙名称是: "ESP32"
+    // SerialBT.setPin("1234");   // 蓝牙连接的配对码
+    Serial.printf("BT initial ok and ready to pair. \r\n");
+    pinMode(LED_PIN, OUTPUT);
+    hexapod::Hexapod.init(command == 1); //done
+
+    for (int i=0; i < 10; i++) {
+        digitalWrite(LED_PIN, HIGH); // 打开LED
+        delay(200); // 延迟1秒
+        digitalWrite(LED_PIN, LOW);
+        delay(200); // 延迟1秒
+    }
+}
+
+void errorLoop(bool isEqual) {
+    if (isEqual) {
+        return;
+    }
+    else {
+        for (int i=0; i < 10; i++){
+            digitalWrite(LED_PIN, HIGH); // 打开LED
+            delay(50); // 延迟1秒
+            digitalWrite(LED_PIN, LOW);
+            delay(50); // 延迟1秒
+        }
+    }
+}
+
+void loop()
+{
+
+    if (Serial.available())
+    {
+        SerialBT.write(Serial.read());
+
+    }
+    if (SerialBT.available())
+    {
+        digitalWrite(LED_PIN, HIGH);
+        //Serial.printf("%d\n",SerialBT.read()); //当有这一行时，会进入errorloop
+        command = SerialBT.read();
+        //errorLoop(tmp == 12);
+        //Serial.printf("%d\n", tmp - 12);  //当有上面的printf后，tmp-12输出-13——说明此时的SerialBT变成了-1，当进行了printf之后就会把东西扔掉
+    }
+    normal_loop(command);
+    //normal_loop(command)
+}

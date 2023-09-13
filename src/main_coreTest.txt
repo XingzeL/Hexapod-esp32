@@ -1,0 +1,47 @@
+#include "wifi_Task.h"
+#include "moveLeg_Task.h"
+
+#define CALI_ONLY 0
+#define MOVE_ONLY 0
+#define MOVEMENT_CORE 0
+#define WIFI_CORE 1
+
+#define BUFFER_SIZE 512
+
+void setup() {
+    Serial.begin(115200);
+    if (!MOVE_ONLY) {
+        xTaskCreate(microRosControl_wifi,  //wifi task default running on core 0
+                    "Control with micro-ros_wifi",
+                    1024 * 4,
+                    NULL,
+                    1,
+                    NULL);
+        if (DEBUG) {Serial.println("wifi task created!");}
+    }
+
+    
+    if (!CALI_ONLY) {
+        xTaskCreatePinnedToCore(moveLegTask,
+                "Move Leg",
+                1024 * 6,
+                NULL,
+                1,
+                NULL,
+                MOVEMENT_CORE); //move leg task, set on core 1
+        if (DEBUG) {Serial.println("move leg task created!");}       
+    }
+    //vTaskStartScheduler();
+}    
+// 创建缓冲区
+// char buffer[BUFFER_SIZE];
+
+void loop() {
+        // // 获取任务列表信息
+        // vTaskList(buffer);
+
+        // // // // 打印任务列表信息
+        // printf("Task list:\n%s\n", buffer);
+
+        // vTaskDelay(pdMS_TO_TICKS(5000));  // 每隔5秒获取一次任务列表信息
+}

@@ -1,0 +1,103 @@
+#include <EEPROM.h>
+#include <Arduino.h>
+
+#define LED_PIN 2
+
+void setup()
+{
+  Serial.begin(115200);
+  Serial.println("");
+
+  for (int i; i < 20; i++) {
+    digitalWrite(LED_PIN, HIGH);
+    delay(100);
+    digitalWrite(LED_PIN, LOW);
+    delay(100);
+  }
+  //第一次写入
+  Serial.println("申请操作到地址9");
+  Serial.println("向地址0~9写入数据0然后提交");
+  EEPROM.begin(10);
+  for (int addr = 0; addr < 10; addr++)
+  {
+    EEPROM.write(addr, 0);
+  }
+  EEPROM.commit();
+  Serial.println("");
+
+  //读取第一次写入后状态
+  Serial.println("申请操作到地址14");
+  Serial.println("读取并打印地址0~14上数据");
+  EEPROM.begin(15);
+  for (int addr = 0; addr < 15; addr++)
+  {
+    int data = EEPROM.read(addr);
+    Serial.print(data);
+    Serial.print(" ");
+  }
+  Serial.println("");
+  Serial.println("");
+
+    //开始第二次写入
+    Serial.printf("开始第二次写入：原来Arduino的写法\n");
+    int address = 0;
+    int size = sizeof(int32_t);
+    for (int i = 0; i < EEPROM.length(); i++) { //initial the value of EEPROM
+        EEPROM.write(i, 1);
+    }
+    for(int i=0;i<6;i++) {
+        for(int j=0;j<3;j++) {
+            int32_t offset = 0;
+            int32_t scale = 5;
+            EEPROM.write(address, offset);
+            EEPROM.write(address + size, scale);
+            address += 2 * size;  //之前没写这里
+        }
+    }
+    address = 0;
+    //1
+    for(int i=0;i<6;i++) {
+        for(int j=0;j<3;j++) {
+            int32_t offset;
+            int32_t scale;
+            EEPROM.get(address, offset);
+            EEPROM.get(address + size, scale);
+            Serial.printf("offset: %d, scale: %d\n", offset, scale);
+            address += 2 * size;  //之前没写这里
+        }
+    }
+    Serial.println("第二次处理EEPROM非常失败");
+    Serial.println("");
+
+    //开始第三次写入和读取
+    Serial.println("开始第三次写入和读取");
+    EEPROM.begin(36);
+    address = 0;
+    for(int i = 0; i < 6; i++) {
+        for (int j = 0; j < 3; j++) {
+            int offset = 0;
+            int scale = 1;
+            EEPROM.write(address, offset);
+            EEPROM.write(address + 1, scale);
+            address += 2;
+        }
+    }
+    EEPROM.commit();
+    Serial.println("Commited");
+
+    Serial.println("");
+    Serial.println("开始读取offset和");
+    EEPROM.begin(36);
+    address = 0;
+    for (int i = 0; i < 6; i++) {
+        for (int j = 0; j < 3; j++) {
+            int offset = EEPROM.read(address);
+            int scale = EEPROM.read(address+1);
+            Serial.printf("offset:%d, scale:%d\n", offset, scale);
+        }
+    }
+}
+
+void loop()
+{
+}

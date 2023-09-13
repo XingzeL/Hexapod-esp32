@@ -1,0 +1,46 @@
+#include <Arduino.h>
+
+volatile unsigned long timer0Counter = 0;
+volatile unsigned long timer1Counter = 0;
+
+hw_timer_t *timer0 = NULL;
+hw_timer_t *timer1 = NULL;
+
+void IRAM_ATTR timer0ISR()
+{
+  timer0Counter++;
+}
+
+void IRAM_ATTR timer1ISR()
+{
+  timer1Counter++;
+}
+
+void setup()
+{
+  Serial.begin(115200);
+
+  // 初始化定时器0
+  timer0 = timerBegin(0, 80, true); // Timer0，预分频80，计时器模式为上升沿计数
+  timerAttachInterrupt(timer0, &timer0ISR, true); // 绑定定时器0中断处理函数
+  timerAlarmWrite(timer0, 10, true); // 定时器0每秒触发一次中断
+  timerAlarmEnable(timer0); // 启用定时器0中断
+
+  // 初始化定时器1
+  timer1 = timerBegin(1, 80, true); // Timer1，预分频80，计时器模式为上升沿计数
+  timerAttachInterrupt(timer1, &timer1ISR, true); // 绑定定时器1中断处理函数
+  timerAlarmWrite(timer1, 10, true); // 定时器1每秒触发一次中断
+  timerAlarmEnable(timer1); // 启用定时器1中断
+}
+
+void loop()
+{
+  // 在循环中打印定时器计数值
+  Serial.print("Timer0 Counter: ");
+  Serial.println(timer0Counter);
+
+  Serial.print("Timer1 Counter: ");
+  Serial.println(timer1Counter);
+
+  delay(1000); // 每秒打印一次计数值
+}

@@ -1,0 +1,79 @@
+#pragma once
+
+
+#define WIFI_ADDRESS "192.168.150.184"
+#define SSID "SSID-A7FB6D"
+#define PASSWD "NDSXrNf6"
+#define NODE_NAME "hexapod_control0"
+#define ESPTOPICNAME "esp_topic0"
+
+#if !defined(ESP32) && !defined(TARGET_PORTENTA_H7_M7) && !defined(ARDUINO_NANO_RP2040_CONNECT)
+#error This example is only avaible for Arduino Portenta, Arduino Nano RP2040 Connect and ESP32 Dev module
+#endif
+
+rclc_executor_t executor;
+
+rcl_publisher_t publisher;
+
+std_msgs__msg__Int32 msg;
+rclc_support_t support;
+rcl_allocator_t allocator;
+rcl_node_t node;
+
+
+#define LED_PIN 13
+
+#define RCCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){error_loop();}}
+#define RCSOFTCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){}}
+
+
+void error_loop(){
+  while(1){
+    digitalWrite(LED_PIN, !digitalRead(LED_PIN));
+    delay(100);
+  }
+}
+
+void timer_callback(rcl_timer_t * timer, int64_t last_call_time)
+{
+  RCLC_UNUSED(last_call_time);
+  if (timer != NULL) {
+    RCSOFTCHECK(rcl_publish(&publisher, &msg, NULL));
+    msg.data++;
+  }
+}
+
+void esp_publiser(void * p) {
+    IPAddress agent_ip;
+    agent_ip.fromString(WIFI_ADDRESS);
+    set_microros_wifi_transports(SSID, PASSWD, agent_ip, 8888);
+
+    pinMode(LED_PIN, OUTPUT);
+    digitalWrite(LED_PIN, HIGH);
+
+    delay(2000);
+
+    allocator = rcl_get_default_allocator();
+
+    //create init_options
+    RCCHECK(rclc_support_init(&support, 0, NULL, &allocator));
+
+    // create node
+    RCCHECK(rclc_node_init_default(&node, NODE_NAME, "", &support));
+
+    // create publisher
+    RCCHECK(rclc_publisher_init_best_effort(
+    &publisher,
+    &node,
+    ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32),
+    TOPICNAME));
+
+    msg.data = 0;
+
+    while(1) {
+        RCSOFTCHECK(rcl_publish(&publisher, &msg, NULL));
+        msg.data++;
+        delay(1000);
+    }
+}
+
